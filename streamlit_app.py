@@ -6,13 +6,13 @@ import os
 from streamlit_mic_recorder import mic_recorder
 
 # ============================================================
-# ⚠️ SECURITY WARNING – REPLACE THESE WITH YOUR NEW KEYS!
-# These keys were exposed in chat. Go revoke them NOW.
+# ⚠️ SECURITY WARNING – Never hardcode keys in production!
+# For local testing only. Replace with environment variables.
 # ============================================================
 
-GEMINI_API_KEY = "AIzaSyDmBDe4mZ8YTtNpLXq8nIMHge2X2Ew8z3g"   # <-- REPLACE
-FISH_API_KEY   = "sk-fish-FnUQ4oBOoBfq2KpaRzoxnBmlQ-4dG5PAoEisI774uv0"  # <-- REPLACE
-FISH_VOICE_ID  = "58cf69fc401a48e7acd9f4ddaba61083"  # ✅ Your working voice ID
+GEMINI_API_KEY = "AQ.Ab8RN6KPS6h4wppdRO9UNUAEToJh3kf_Dv8osRWpfmNvZXVIUA"  # Your new key
+FISH_API_KEY   = "YOUR_FISH_KEY_HERE"  # Replace with your Fish key
+FISH_VOICE_ID  = "58cf69fc401a48e7acd9f4ddaba61083"  # Working voice ID
 
 # ============================================================
 # The "Secretary + Best Friend" system prompt
@@ -37,7 +37,7 @@ st.sidebar.markdown("[Buy me a coffee](https://www.buymeacoffee.com)")
 # ---------- INPUT SECTION ----------
 user_input = st.text_area("💬 Type your message (or use the mic below)", height=80)
 
-# Voice Recorder Button (Streamlit Mic Recorder)
+# Voice Recorder Button
 audio_data = mic_recorder(
     start_prompt="🎙️ Click to Start Recording",
     stop_prompt="⏹️ Stop Recording",
@@ -47,14 +47,12 @@ audio_data = mic_recorder(
 
 # If voice was recorded, send it to Fish ASR
 if audio_data and 'bytes' in audio_data:
-    with st.spinner("Transcribing your voice... (using Fish Audio ASR)"):
+    with st.spinner("Transcribing your voice..."):
         try:
-            # Save the recorded audio to a temporary WAV file
             with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
                 tmp.write(audio_data['bytes'])
                 tmp_path = tmp.name
 
-            # Call Fish Audio ASR API
             asr_url = "https://api.fish.audio/v1/asr"
             headers_asr = {"Authorization": f"Bearer {FISH_API_KEY}"}
             with open(tmp_path, "rb") as f:
@@ -72,7 +70,6 @@ if audio_data and 'bytes' in audio_data:
         except Exception as e:
             st.error(f"❌ ASR failed: {e}")
         finally:
-            # Clean up temp file
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
 
@@ -105,14 +102,13 @@ if st.button("🚀 Generate", type="primary") and user_input:
             }
             payload_fish = {
                 "text": ai_reply,
-                "reference_id": FISH_VOICE_ID,  # ✅ Working ID from your cURL
+                "reference_id": FISH_VOICE_ID,
                 "format": "mp3"
             }
             
             fish_resp = requests.post(fish_url, json=payload_fish, headers=headers_fish)
             fish_resp.raise_for_status()
             
-            # Save MP3
             with open("output.mp3", "wb") as f:
                 f.write(fish_resp.content)
             
@@ -133,5 +129,4 @@ else:
     if st.button("🚀 Generate", type="primary") and not user_input:
         st.warning("Please type a message or speak into the mic first.")
 
-# Footer
 st.caption("Powered by Google Gemini Flash & Fish Audio (TTS + ASR)")
